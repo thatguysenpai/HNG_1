@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 from datetime import datetime
 import hashlib
+import requests
 
 app = FastAPI(title = "String Analasys API")
 
