@@ -2,102 +2,101 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 from datetime import datetime
 import hashlib
-import requests
 
-app = FastAPI(title = "String Analasys API")
+app = FastAPI(title="String Analysis API")
 
-@app.get("/")
-def root():
-    return {"message": "String Analysis API running"}
-
-
-# Temporary in memoryu database
+# In-memory database
 database = {}
 
+# Pydantic model for input validation
 class StringInput(BaseModel):
     value: str
-    
+
+
+# Helper function to analyze a string
 def analyze_string(value: str):
     value_stripped = value.strip()
     lower_value = value_stripped.lower()
-    
-    #compute properties
+
+    # Compute properties
     length = len(value_stripped)
     is_palindrome = lower_value == lower_value[::-1]
     unique_characters = len(set(value_stripped))
     word_count = len(value_stripped.split())
     sha256_hash = hashlib.sha256(value_stripped.encode()).hexdigest()
-    
-    #frequency map
+
+    # Frequency map
     freq_map = {}
     for char in value_stripped:
         freq_map[char] = freq_map.get(char, 0) + 1
-        
+
     return {
-        "length": length, 
+        "length": length,
         "is_palindrome": is_palindrome,
-        "unique_characters": unique_characters, 
-        "word_count": word_count, 
-        "sha256_hash": sha256_hash, 
+        "unique_characters": unique_characters,
+        "word_count": word_count,
+        "sha256_hash": sha256_hash,
         "character_frequency_map": freq_map,
     }
-    
+
+
+# Root endpoint
+@app.get("/")
+def root():
+    return {"message": "String Analysis API is running 🚀"}
+
+
+# Create a new string entry
 @app.post("/strings", status_code=201)
 def create_string(data: StringInput):
-    
-    # 422 is automatically raised by FastAPI if value isn't a string, so i didnt have to handle it manually.
-
-    
     if not isinstance(data.value, str) or data.value.strip() == "":
         raise HTTPException(status_code=400, detail="Invalid request body or missing 'value' field")
-    
+
     analyzed = analyze_string(data.value)
     string_id = analyzed["sha256_hash"]
-    
+
     if string_id in database:
         raise HTTPException(status_code=409, detail="String already exists")
-    
+
     record = {
-        "id" : string_id, 
-        "value": data.value, 
-        "properties": analyzed, 
-        "created_at": datetime.utcnow().isoformat() + "Z"
+        "id": string_id,
+        "value": data.value,
+        "properties": analyzed,
+        "created_at": datetime.utcnow().isoformat() + "Z",
     }
-    
+
     database[string_id] = record
     return record
-    
-    
-  # getting a specfic string  
+
+
+# Get a specific string
 @app.get("/strings/{string_value}")
 def get_string(string_value: str):
     value_stripped = string_value.strip()
     string_hash = hashlib.sha256(value_stripped.encode()).hexdigest()
-    
-    # checking if it exists
+
     record = database.get(string_hash)
-    if not record: 
+    if not record:
         raise HTTPException(status_code=404, detail="String not found")
-    
+
     return record
 
-# getting strings with filtering
+
+# Get all strings with filtering
 @app.get("/strings")
 def get_all_strings(
-    is_palindrome: bool | None = Query(None), 
-    min_length: int | None = Query(None, ge=0), 
-    max_length: int | None = Query(None, ge=0), 
-    word_count: int | None = Query(None, ge=0), 
-    contains_character: str | None = Query(None, min_length=1, max_length=1)
-
+    is_palindrome: bool | None = Query(None),
+    min_length: int | None = Query(None, ge=0),
+    max_length: int | None = Query(None, ge=0),
+    word_count: int | None = Query(None, ge=0),
+    contains_character: str | None = Query(None, min_length=1, max_length=1),
 ):
     try:
         filtered = []
         for record in database.values():
             props = record["properties"]
             value = record["value"]
-            
-            #to apply filters provided
+
             if is_palindrome is not None and props["is_palindrome"] != is_palindrome:
                 continue
             if min_length is not None and props["length"] < min_length:
@@ -108,27 +107,28 @@ def get_all_strings(
                 continue
             if contains_character and contains_character not in value:
                 continue
-            
+
             filtered.append(record)
-            
-        filtrs_applied = {
+
+        filters_applied = {
             "is_palindrome": is_palindrome,
             "min_length": min_length,
             "max_length": max_length,
             "word_count": word_count,
             "contains_character": contains_character,
         }
-        
+
         return {
-            "data": filtered, 
+            "data": filtered,
             "count": len(filtered),
-            "filters_applied": {k: v for k, v in filtrs_applied.items() if v is not None}
+            "filters_applied": {k: v for k, v in filters_applied.items() if v is not None},
         }
 
     except ValueError:
-        raise HTTPException(status_code = 400, detail= "Invalid query parameter values or types")
-    
-    
+        raise HTTPException(status_code=400, detail="Invalid query parameter values or types")
+
+
+# Delete a string
 @app.delete("/strings/{string_value}", status_code=204)
 def delete_string(string_value: str):
     value_stripped = string_value.strip()
@@ -138,4 +138,4 @@ def delete_string(string_value: str):
         raise HTTPException(status_code=404, detail="String does not exist in the system")
 
     del database[string_hash]
-    return  # empty body per spec
+    return
