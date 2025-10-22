@@ -16,4 +16,4 @@ A RESTful FastAPI service that analyzes strings and stores their computed proper
 
 ```bash
 git clone https://github.com/thatguysenpai/HNG_1.git
-cd string_api
+cd stage1
