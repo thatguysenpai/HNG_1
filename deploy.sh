@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-# Install dependencies
 pip install -r requirements.txt
 
-# Start FastAPI using Uvicorn
-uvicorn main:app --host 0.0.0.0 --port $PORT
-
+# Start FastAPI with the host and dynamic port
+uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
