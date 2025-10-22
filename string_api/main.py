@@ -106,23 +106,24 @@ def get_all_strings(
             if word_count is not None and props["word_count"] != word_count:
                 continue
             if contains_character and contains_character not in value:
-                contains_character
-                
+                continue
+            
             filtered.append(record)
             
-            filtrs_applied = {
-                "is_palindrome": is_palindrome,
-                "min_length": min_length,
-                "max_length": max_length,
-                "word_count": word_count,
-                "contains_character": contains_character,
-            }
-            
-            return {
-                "data": filtered, 
-                "count": len(filtered),
-                "filters_applied": {k: v for k, v in filtrs_applied.items() if v is not None}
-            }
+        filtrs_applied = {
+            "is_palindrome": is_palindrome,
+            "min_length": min_length,
+            "max_length": max_length,
+            "word_count": word_count,
+            "contains_character": contains_character,
+        }
+        
+        return {
+            "data": filtered, 
+            "count": len(filtered),
+            "filters_applied": {k: v for k, v in filtrs_applied.items() if v is not None}
+        }
+
     except ValueError:
         raise HTTPException(status_code = 400, detail= "Invalid query parameter values or types")
     
